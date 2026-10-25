@@ -18,8 +18,14 @@ class Settings(BaseSettings):
     jwt_audience: str = "authenticated"
     avatars_bucket: str = "avatars"
 
-    # Capacitor apps (Android https://localhost, iOS capacitor://localhost) and the Vite dev server.
-    cors_origins: list[str] = ["https://localhost", "capacitor://localhost", "http://localhost:5173"]
+    # Capacitor apps (Android https://localhost, iOS capacitor://localhost), the Vite dev server and the
+    # HTTPS tunnel used to try the web app from a phone.
+    cors_origins: list[str] = [
+        "https://localhost",
+        "capacitor://localhost",
+        "http://localhost:5173",
+        "https://gym.josepineros.dev",
+    ]
     # Requests per user and minute; 0 turns the limit off.
     rate_limit_per_minute: int = 120
     max_body_bytes: int = 1_000_000
