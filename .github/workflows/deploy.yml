@@ -1,0 +1,58 @@
+# Deploys to Cloud Run on every push to main, after the tests pass.
+# Setup (once): see "Despliegue" in README.md. Repository variables: GCP_PROJECT_ID, GCP_REGION,
+# GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT, SUPABASE_URL, CORS_ORIGINS.
+# Secret Manager secrets: gym-database-url, gym-supabase-service-role-key.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: test
+    # Skipped until the Google Cloud variables are set.
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/gym/gym-server:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+      - run: docker build -t "$IMAGE" . && docker push "$IMAGE"
+
+      - name: Migrate the database
+        run: |
+          DATABASE_URL="$(gcloud secrets versions access latest --secret=gym-database-url)"
+          echo "::add-mask::$DATABASE_URL"
+          docker run --rm -e DATABASE_URL="$DATABASE_URL" "$IMAGE" alembic upgrade head
+
+      - uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: gym-server
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ env.IMAGE }}
+          # Scale to zero, and never past 2 instances: a bug or abuse can't run up the bill.
+          flags: --min-instances=0 --max-instances=2 --memory=512Mi --cpu=1 --allow-unauthenticated
+          env_vars: |
+            SUPABASE_URL=${{ vars.SUPABASE_URL }}
+            CORS_ORIGINS=${{ vars.CORS_ORIGINS }}
+          secrets: |
+            DATABASE_URL=gym-database-url:latest
+            SUPABASE_SERVICE_ROLE_KEY=gym-supabase-service-role-key:latest
