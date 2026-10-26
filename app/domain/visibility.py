@@ -35,6 +35,6 @@ def can_view(visibility: Visibility, *, is_owner: bool, owner_is_private: bool, 
     return visibility in visible_levels(is_owner=is_owner, owner_is_private=owner_is_private, is_follower=is_follower)
 
 
-def can_view_connections(*, is_owner: bool, owner_is_private: bool, is_follower: bool) -> bool:
-    """Followers / following lists follow the profile's privacy."""
-    return is_owner or is_follower or not owner_is_private
+def can_view_connections(*, is_owner: bool) -> bool:
+    """Only the owner sees who follows them and whom they follow; others see just the counts."""
+    return is_owner

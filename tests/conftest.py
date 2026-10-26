@@ -211,9 +211,9 @@ class User:
 
 @pytest.fixture
 def new_user(client: httpx.AsyncClient) -> Any:
-    async def create(username: str, *, private: bool = False) -> User:
+    async def create(username: str) -> User:
         user = User(client, uuid4(), username)
-        response = await user.patch("/me", json={"username": username, "isPrivate": private})
+        response = await user.patch("/me", json={"username": username})
         assert response.status_code == 200, response.text
         return user
 

@@ -7,7 +7,7 @@ from app.domain.pagination import Cursor, Page, page_of
 from app.domain.profile import Profile
 from app.domain.social import REPORT_DETAILS_MAX, Connection, Follow, Report, ReportReason
 from app.domain.visibility import FollowStatus, Visibility, can_view_connections, follow_status_for
-from app.services.access import relationship, visible_profile
+from app.services.access import visible_profile
 from app.services.ports import UnitOfWork
 
 
@@ -73,12 +73,9 @@ class FollowService:
         return request
 
     async def _check_connections_visible(self, viewer_id: UUID, user_id: UUID) -> None:
-        owner = await visible_profile(self._uow, viewer_id, user_id)
-        rel = await relationship(self._uow, viewer_id, user_id)
-        if not can_view_connections(
-            is_owner=rel.is_owner, owner_is_private=owner.is_private, is_follower=rel.is_follower
-        ):
-            raise Forbidden("profile.private", "This profile is private")
+        await visible_profile(self._uow, viewer_id, user_id)
+        if not can_view_connections(is_owner=viewer_id == user_id):
+            raise Forbidden("connections.ownerOnly", "Only the owner can see these lists")
 
     async def _started_following(self, follower_id: UUID, followee_id: UUID, now: datetime) -> None:
         await self._uow.activities.upsert(

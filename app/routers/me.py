@@ -58,7 +58,6 @@ async def update_me(body: ProfilePatchIn, profile: ProfileDep, service: ProfileS
         username=body.username,
         display_name=body.display_name,
         bio=body.bio,
-        is_private=body.is_private,
         avatar_url=body.avatar_url,
         clear_avatar="avatar_url" in body.model_fields_set and body.avatar_url is None,
     )

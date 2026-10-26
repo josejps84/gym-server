@@ -29,10 +29,6 @@ async def test_routine_visibility(new_user: Any) -> None:
     assert (await ana.get(f"/routines/{private}")).status_code == 404
     assert (await jose.get(f"/routines/{private}")).status_code == 200
 
-    await jose.patch("/me", json={"isPrivate": True})
-    assert (await stranger.get(f"/routines/{public}")).status_code == 404
-    assert (await ana.get(f"/routines/{public}")).status_code == 200
-
 
 async def test_featured_routines_with_custom_exercises(new_user: Any) -> None:
     jose: User = await new_user("jose")
@@ -149,8 +145,6 @@ async def test_user_activity_respects_privacy(new_user: Any) -> None:
     assert types(await jose.get("/users/jose/activity")) == ["routine_shared", "workout_completed"]
     assert types(await ana.get("/users/jose/activity")) == ["routine_shared", "workout_completed"]
     assert types(await stranger.get("/users/jose/activity")) == ["routine_shared"]
-    await jose.patch("/me", json={"isPrivate": True})
-    assert types(await stranger.get("/users/jose/activity")) == []
     assert types(await ana.get("/users/ana/activity")) == ["started_following"]
 
 

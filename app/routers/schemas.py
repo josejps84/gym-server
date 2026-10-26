@@ -71,7 +71,7 @@ class ProfilePatchIn(ApiModel):
     username: str | None = None
     display_name: str | None = None
     bio: str | None = None
-    is_private: bool | None = None
+    # Every profile is public for now: no isPrivate here (the rest of the private-profile logic stays).
     # null removes the photo.
     avatar_url: str | None = None
 
