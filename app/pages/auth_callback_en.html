@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gym</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 17px/1.6 system-ui, sans-serif; max-width: 30rem; margin: 0 auto; padding: 3rem 1.25rem; text-align: center; }
+  h1 { font-size: 1.5rem; }
+  [hidden] { display: none !important; }
+  a.button { display: inline-block; margin-top: 1rem; padding: 0.8rem 1.6rem; border-radius: 999px;
+    background: #3880ff; color: #fff; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<section id="signup"><h1>Email confirmed</h1><p>If you are on the phone that has the app, tap <strong>Open the app</strong> to sign in. Otherwise, open the app on your phone and sign in with your email and password.</p></section>
+<section id="recovery" hidden><h1>Change your password</h1><p>Open this link on the phone that has the app and tap <strong>Open the app</strong> to choose the new password. If you opened it somewhere else, ask for another email from the app.</p></section>
+<section id="failed" hidden><h1>Invalid link</h1><p>The link has expired or was already used. Ask for another one from the app.</p></section>
+<a id="open" class="button" href="$app_url">Open the app</a>
+<script>
+  // Supabase adds ?code=... (or error=... in the query or the hash); the app finishes the sign-in with it.
+  const params = new URLSearchParams(location.search + "&" + location.hash.slice(1));
+  const failed = params.has("error") || params.has("error_code");
+  const shown = failed ? "failed" : params.get("type") === "recovery" ? "recovery" : "signup";
+  for (const id of ["signup", "recovery", "failed"]) document.getElementById(id).hidden = id !== shown;
+  const open = document.getElementById("open");
+  open.hidden = failed;
+  open.href = "$app_url" + location.search + location.hash;
+</script>
+</body>
+</html>

@@ -13,3 +13,12 @@ async def test_privacy_policy_in_both_languages(client: httpx.AsyncClient) -> No
     assert "Privacy policy" in english.text
     assert "Privacy policy" in (await client.get("/privacy", params={"lang": "en"})).text
     assert (await client.get("/privacy", params={"lang": "fr"})).status_code == 422
+
+
+async def test_email_links_land_on_a_page_that_opens_the_app(client: httpx.AsyncClient) -> None:
+    page = await client.get("/auth/callback", params={"code": "abc"})
+    assert page.status_code == 200
+    assert "Correo confirmado" in page.text
+    assert 'href="com.gymtracker.app://auth-callback"' in page.text
+    assert "$" not in page.text.replace("${", "")
+    assert "Email confirmed" in (await client.get("/auth/callback", params={"lang": "en"})).text

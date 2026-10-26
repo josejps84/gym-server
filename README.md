@@ -54,8 +54,11 @@ tests/             pytest; conftest.py tiene fakes de Storage/Auth y genera toke
 - **Borrar cuenta:** `DELETE /me` borra todos los datos, las fotos y el usuario de Supabase Auth.
 - **Reportes:** se guardan en la tabla `reports` (se revisan a mano en Supabase) y, si hay `RESEND_API_KEY`,
   llega un correo a `REPORTS_EMAIL` por cada uno. Si el correo falla, el reporte se guarda igual.
-- **Política de privacidad:** `GET /privacy` (`?lang=es|en`, o según el navegador), en `app/legal/`. Al
-  cambiarla, actualizar `PRIVACY_UPDATED` en `app/routers/legal.py`. El responsable sale de `PRIVACY_CONTACT`.
+- **Política de privacidad:** `GET /privacy` (`?lang=es|en`, o según el navegador), en `app/pages/`. Al
+  cambiarla, actualizar `PRIVACY_UPDATED` en `app/routers/pages.py`. El responsable sale de `PRIVACY_CONTACT`.
+- **Enlaces de los correos:** confirmar cuenta y cambiar contraseña llevan a `GET /auth/callback`, que en el
+  teléfono abre la app con el código (`com.gymtracker.app://auth-callback`) y en otro sitio explica qué hacer.
+  Añadir `<API>/auth/callback**` a las Redirect URLs de Supabase.
 - **Límite de peticiones:** 120 por usuario y minuto (`RATE_LIMIT_PER_MINUTE`), en memoria por instancia.
 - **RLS:** todas las tablas tienen Row Level Security activado sin políticas, para que la Data API de
   Supabase (clave anon) no pueda leerlas. La API se conecta como dueña de las tablas y no le afecta.

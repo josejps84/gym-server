@@ -11,7 +11,7 @@ from app.config import Settings
 from app.container import Container, build_container
 from app.dependencies import ContainerDep
 from app.domain.errors import Conflict, DomainError, Forbidden, Invalid, NotFound
-from app.routers import feed, legal, me, routines, sync, users
+from app.routers import feed, me, pages, routines, sync, users
 from app.routers.schemas import Health
 from app.services.ports import UpstreamError
 
@@ -69,6 +69,6 @@ def create_app(container: Container | None = None) -> FastAPI:
             await connection.execute(text("SELECT 1"))
         return Health(status="ok")
 
-    for module in (me, sync, users, routines, feed, legal):
+    for module in (me, sync, users, routines, feed, pages):
         app.include_router(module.router)
     return app
