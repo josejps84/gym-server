@@ -7,10 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.auth import TokenVerifier, jwks_resolver
 from app.config import Settings
+from app.integrations.mail import NoMailer, ResendMailer
 from app.integrations.photos import HttpPhotoFetcher
 from app.integrations.supabase import SupabaseAvatarStorage, SupabaseIdentityAdmin
 from app.rate_limit import RateLimiter
-from app.services.ports import AvatarStorage, IdentityAdmin, PhotoFetcher
+from app.services.ports import AvatarStorage, IdentityAdmin, Mailer, PhotoFetcher
 
 
 @dataclass
@@ -23,6 +24,7 @@ class Container:
     identity: IdentityAdmin
     photos: PhotoFetcher
     rate_limiter: RateLimiter
+    mailer: Mailer = field(default_factory=NoMailer)
     http: httpx.AsyncClient | None = field(default=None)
 
     async def close(self) -> None:
@@ -46,6 +48,7 @@ def build_container(settings: Settings) -> Container:
     engine = create_engine(settings)
     http = httpx.AsyncClient(timeout=10)
     service_key = settings.supabase_service_role_key.get_secret_value()
+    resend_key = settings.resend_api_key.get_secret_value()
     return Container(
         settings=settings,
         engine=engine,
@@ -57,5 +60,6 @@ def build_container(settings: Settings) -> Container:
         identity=SupabaseIdentityAdmin(http, settings.supabase_url, service_key),
         photos=HttpPhotoFetcher(http),
         rate_limiter=RateLimiter(settings.rate_limit_per_minute),
+        mailer=ResendMailer(http, resend_key, settings.mail_from) if resend_key else NoMailer(),
         http=http,
     )

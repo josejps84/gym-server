@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import uuid4
 
-from tests.conftest import User
+from tests.conftest import REPORTS_EMAIL, FakeMailer, User
 
 
 async def test_follow_a_public_profile(new_user: Any) -> None:
@@ -75,10 +75,22 @@ async def test_block_hides_both_users_and_removes_follows(new_user: Any) -> None
     assert (await troll.get("/users/jose")).status_code == 200
 
 
-async def test_report(new_user: Any) -> None:
+async def test_report(new_user: Any, mailer: FakeMailer) -> None:
     jose: User = await new_user("jose")
     troll: User = await new_user("troll")
     response = await jose.post(f"/users/{troll.id}/report", json={"reason": "harassment", "details": "Insultos"})
     assert response.status_code == 204
+    [(to, subject, text)] = mailer.sent
+    assert to == REPORTS_EMAIL
+    assert subject == "Report: @troll (harassment)"
+    assert "@jose reported @troll" in text
+    assert "Insultos" in text
     assert (await jose.post(f"/users/{troll.id}/report", json={"reason": "nope"})).status_code == 422
     assert (await jose.post(f"/users/{jose.id}/report", json={"reason": "spam"})).status_code == 422
+
+
+async def test_a_report_is_saved_even_if_the_email_fails(new_user: Any, mailer: FakeMailer) -> None:
+    jose: User = await new_user("jose")
+    troll: User = await new_user("troll")
+    mailer.failing = True
+    assert (await jose.post(f"/users/{troll.id}/report", json={"reason": "spam"})).status_code == 204

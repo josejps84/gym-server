@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -8,7 +9,9 @@ from app.domain.profile import Profile
 from app.domain.social import REPORT_DETAILS_MAX, Connection, Follow, Report, ReportReason
 from app.domain.visibility import FollowStatus, Visibility, can_view_connections, follow_status_for
 from app.services.access import visible_profile
-from app.services.ports import UnitOfWork
+from app.services.ports import Mailer, UnitOfWork, UpstreamError
+
+log = logging.getLogger(__name__)
 
 
 def _connection_cursor(connection: Connection) -> Cursor:
@@ -84,8 +87,10 @@ class FollowService:
 
 
 class ModerationService:
-    def __init__(self, uow: UnitOfWork) -> None:
+    def __init__(self, uow: UnitOfWork, mailer: Mailer, reports_email: str = "") -> None:
         self._uow = uow
+        self._mailer = mailer
+        self._reports_email = reports_email
 
     async def block(self, user_id: UUID, target_id: UUID) -> None:
         """Hides each user from the other and removes any follow between them."""
@@ -112,9 +117,27 @@ class ModerationService:
         if len(details) > REPORT_DETAILS_MAX:
             raise Invalid("report.details", f"Details are longer than {REPORT_DETAILS_MAX}")
         # Reporting works even after blocking, so no visibility check here.
-        await self._existing(target_id)
-        await self._uow.reports.add(Report(uuid4(), user_id, target_id, reason, details, datetime.now(UTC)))
+        target = await self._existing(target_id)
+        report = Report(uuid4(), user_id, target_id, reason, details, datetime.now(UTC))
+        await self._uow.reports.add(report)
         await self._uow.commit()
+        await self._notify(report, await self._existing(user_id), target)
+
+    async def _notify(self, report: Report, reporter: Profile, target: Profile) -> None:
+        """The report is already saved, so a failed email is only logged."""
+        if not self._reports_email:
+            return
+        text = (
+            f"@{reporter.username} reported @{target.username}\n"
+            f"Reason: {report.reason}\n"
+            f"Details: {report.details or '-'}\n\n"
+            f"Report {report.id}, user {target.id}, {report.created_at.isoformat()}\n"
+            "Review it in Supabase: Table Editor > reports."
+        )
+        try:
+            await self._mailer.send(self._reports_email, f"Report: @{target.username} ({report.reason})", text)
+        except UpstreamError:
+            log.exception("Could not email report %s", report.id)
 
     async def _existing(self, user_id: UUID) -> Profile:
         profile = await self._uow.profiles.get(user_id)

@@ -89,8 +89,8 @@ def follow_service(uow: UowDep) -> FollowService:
     return FollowService(uow)
 
 
-def moderation_service(uow: UowDep) -> ModerationService:
-    return ModerationService(uow)
+def moderation_service(uow: UowDep, container: ContainerDep) -> ModerationService:
+    return ModerationService(uow, container.mailer, container.settings.reports_email)
 
 
 def sync_service(uow: UowDep) -> SyncService:

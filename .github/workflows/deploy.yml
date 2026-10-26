@@ -1,6 +1,7 @@
 # Deploys to Cloud Run on every push to main, after the tests pass.
 # Setup (once): see "Despliegue" in README.md. Repository variables: GCP_PROJECT_ID, GCP_REGION,
-# GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT, GCP_RUNTIME_SERVICE_ACCOUNT, SUPABASE_URL.
+# GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT, GCP_RUNTIME_SERVICE_ACCOUNT, SUPABASE_URL, and optional
+# MAIL_FROM, REPORTS_EMAIL, PRIVACY_CONTACT (no commas in them, see the CORS note).
 # CORS uses the defaults in app/config.py (a JSON list can't go through env_vars: it splits on commas).
 # Secret Manager secrets: gym-database-url, gym-supabase-service-role-key.
 name: Deploy
@@ -54,6 +55,9 @@ jobs:
             --service-account=${{ vars.GCP_RUNTIME_SERVICE_ACCOUNT }}
           env_vars: |
             SUPABASE_URL=${{ vars.SUPABASE_URL }}
+            MAIL_FROM=${{ vars.MAIL_FROM }}
+            REPORTS_EMAIL=${{ vars.REPORTS_EMAIL }}
+            PRIVACY_CONTACT=${{ vars.PRIVACY_CONTACT }}
           secrets: |
             DATABASE_URL=gym-database-url:latest
             SUPABASE_SERVICE_ROLE_KEY=gym-supabase-service-role-key:latest

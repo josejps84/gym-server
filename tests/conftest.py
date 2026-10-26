@@ -107,6 +107,22 @@ class FakeIdentity:
         self.deleted.append(user_id)
 
 
+@dataclass
+class FakeMailer:
+    """Keeps the emails, or fails when `failing`."""
+
+    sent: list[tuple[str, str, str]] = field(default_factory=list)
+    failing: bool = False
+
+    async def send(self, to: str, subject: str, text: str) -> None:
+        if self.failing:
+            raise UpstreamError("down")
+        self.sent.append((to, subject, text))
+
+
+REPORTS_EMAIL = "mod@example.com"
+
+
 def _migrate() -> None:
     config = Config(str(ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(ROOT / "migrations"))
@@ -152,15 +168,23 @@ def photos() -> FakePhotos:
     return FakePhotos()
 
 
+@pytest.fixture
+def mailer() -> FakeMailer:
+    return FakeMailer()
+
+
 def build_test_container(
     engine: AsyncEngine,
     storage: FakeStorage,
     identity: FakeIdentity,
     rate_limit: int = 0,
     photos: FakePhotos | None = None,
+    mailer: FakeMailer | None = None,
 ) -> Container:
     return Container(
-        settings=Settings(database_url=TEST_DATABASE_URL, supabase_url="https://supabase.test"),
+        settings=Settings(
+            database_url=TEST_DATABASE_URL, supabase_url="https://supabase.test", reports_email=REPORTS_EMAIL
+        ),
         engine=engine,
         sessions=async_sessionmaker(engine, expire_on_commit=False),
         verifier=verifier_for_tests(),
@@ -168,14 +192,20 @@ def build_test_container(
         identity=identity,
         photos=photos or FakePhotos(),
         rate_limiter=RateLimiter(rate_limit),
+        mailer=mailer or FakeMailer(),
     )
 
 
 @pytest.fixture
 async def client(
-    engine: AsyncEngine, clean_db: None, storage: FakeStorage, identity: FakeIdentity, photos: FakePhotos
+    engine: AsyncEngine,
+    clean_db: None,
+    storage: FakeStorage,
+    identity: FakeIdentity,
+    photos: FakePhotos,
+    mailer: FakeMailer,
 ) -> AsyncIterator[httpx.AsyncClient]:
-    app = create_app(build_test_container(engine, storage, identity, photos=photos))
+    app = create_app(build_test_container(engine, storage, identity, photos=photos, mailer=mailer))
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
         yield http

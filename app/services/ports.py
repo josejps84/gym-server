@@ -151,5 +151,11 @@ class IdentityAdmin(Protocol):
         ...
 
 
+class Mailer(Protocol):
+    async def send(self, to: str, subject: str, text: str) -> None:
+        """Plain-text email; UpstreamError if the provider fails."""
+        ...
+
+
 class UpstreamError(Exception):
-    """Supabase (Auth or Storage) failed or could not be reached."""
+    """Supabase (Auth or Storage) or the email provider failed or could not be reached."""

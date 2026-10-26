@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 120
     max_body_bytes: int = 1_000_000
 
+    # Email through Resend; without a key nothing is sent. Reports go to `reports_email`.
+    resend_api_key: SecretStr = SecretStr("")
+    mail_from: str = ""
+    reports_email: str = ""
+    # Who answers for the data, shown in /privacy.
+    privacy_contact: str = ""
+
     @property
     def jwks_url(self) -> str:
         return f"{self.supabase_url}/auth/v1/.well-known/jwks.json"

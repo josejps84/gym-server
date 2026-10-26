@@ -52,6 +52,10 @@ tests/             pytest; conftest.py tiene fakes de Storage/Auth y genera toke
 - **Foto de perfil:** `POST /me/avatar-upload-url` → subir la imagen (512 px) a la URL firmada →
   `PATCH /me {"avatarUrl": ...}`. La anterior se borra sola.
 - **Borrar cuenta:** `DELETE /me` borra todos los datos, las fotos y el usuario de Supabase Auth.
+- **Reportes:** se guardan en la tabla `reports` (se revisan a mano en Supabase) y, si hay `RESEND_API_KEY`,
+  llega un correo a `REPORTS_EMAIL` por cada uno. Si el correo falla, el reporte se guarda igual.
+- **Política de privacidad:** `GET /privacy` (`?lang=es|en`, o según el navegador), en `app/legal/`. Al
+  cambiarla, actualizar `PRIVACY_UPDATED` en `app/routers/legal.py`. El responsable sale de `PRIVACY_CONTACT`.
 - **Límite de peticiones:** 120 por usuario y minuto (`RATE_LIMIT_PER_MINUTE`), en memoria por instancia.
 - **RLS:** todas las tablas tienen Row Level Security activado sin políticas, para que la Data API de
   Supabase (clave anon) no pueda leerlas. La API se conecta como dueña de las tablas y no le afecta.
