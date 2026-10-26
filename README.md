@@ -74,11 +74,12 @@ tests/             pytest; conftest.py tiene fakes de Storage/Auth y genera toke
 
 1. En Google Cloud: proyecto con facturación, **alerta de presupuesto de 1 €**, APIs Cloud Run,
    Artifact Registry y Secret Manager. Repositorio Docker `gym` en Artifact Registry.
-2. Secretos en Secret Manager: `gym-database-url` y `gym-supabase-service-role-key`.
+2. Secretos en Secret Manager: `gym-database-url`, `gym-supabase-service-role-key` y `gym-resend-api-key`
+   (clave de Resend con permiso solo de envío).
 3. Cuenta de servicio `gym-deployer` para GitHub con Workload Identity Federation (sin claves JSON, solo
    la rama `main` de este repo), con Cloud Run Admin, Artifact Registry Writer, acceso al secreto
    `gym-database-url` (migraciones) y Service Account User sobre `gym-runtime`.
-   Cuenta `gym-runtime` para Cloud Run, con acceso solo a los dos secretos.
+   Cuenta `gym-runtime` para Cloud Run, con acceso solo a esos tres secretos.
 4. Variables del repositorio en GitHub: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WORKLOAD_IDENTITY_PROVIDER`,
    `GCP_SERVICE_ACCOUNT`, `GCP_RUNTIME_SERVICE_ACCOUNT`, `SUPABASE_URL` y, tras el primer despliegue, `API_URL`
    (activa el ping de `keepalive.yml` cada 3 días para que Supabase no pause el proyecto).

@@ -3,7 +3,7 @@
 # GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT, GCP_RUNTIME_SERVICE_ACCOUNT, SUPABASE_URL, and optional
 # MAIL_FROM, REPORTS_EMAIL, PRIVACY_CONTACT (no commas in them, see the CORS note).
 # CORS uses the defaults in app/config.py (a JSON list can't go through env_vars: it splits on commas).
-# Secret Manager secrets: gym-database-url, gym-supabase-service-role-key.
+# Secret Manager secrets: gym-database-url, gym-supabase-service-role-key, gym-resend-api-key.
 name: Deploy
 
 on:
@@ -61,3 +61,4 @@ jobs:
           secrets: |
             DATABASE_URL=gym-database-url:latest
             SUPABASE_SERVICE_ROLE_KEY=gym-supabase-service-role-key:latest
+            RESEND_API_KEY=gym-resend-api-key:latest
