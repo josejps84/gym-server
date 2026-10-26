@@ -124,7 +124,7 @@ async def test_a_shared_session_creates_one_activity(new_user: Any) -> None:
     assert len(workouts) == 1
     workout = workouts[0]["workout"]
     assert workout["sessionId"] == str(session_id)
-    assert workout["summary"] == {"durationSeconds": 3600, "volumeKg": 5230.5, "sets": 18}
+    assert workout["summary"] == {"durationSeconds": 3600, "sets": 18}
     assert "data" not in workout
 
     await jose.put(

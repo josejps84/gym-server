@@ -7,6 +7,9 @@ from app.services.feed import ActivityView
 
 router = APIRouter(tags=["feed"])
 
+# What others see of a workout: how long and how many sets, not the weights.
+PUBLISHED_SUMMARY = ("durationSeconds", "sets")
+
 
 def activity_out(view: ActivityView) -> ActivityOut:
     out = ActivityOut(
@@ -22,7 +25,7 @@ def activity_out(view: ActivityView) -> ActivityOut:
             routine_id=view.session.routine_id,
             started_at=view.session.started_at,
             ended_at=view.session.ended_at,
-            summary=view.session.summary,
+            summary={k: v for k, v in view.session.summary.items() if k in PUBLISHED_SUMMARY},
         )
     if view.routine:
         out.routine = SharedRoutineOut(

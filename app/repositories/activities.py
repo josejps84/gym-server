@@ -1,7 +1,7 @@
 from collections.abc import Collection
 from uuid import UUID
 
-from sqlalchemy import Select, delete, select, tuple_
+from sqlalchemy import Select, delete, or_, select, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,14 +58,13 @@ class SqlActivityRepository:
         return await self._page(stmt, cursor, limit)
 
     async def feed(self, viewer_id: UUID, cursor: Cursor | None, limit: int) -> list[Activity]:
-        stmt = (
-            select(ActivityRow)
-            .join(FollowRow, FollowRow.followee_id == ActivityRow.user_id)
-            .where(
-                FollowRow.follower_id == viewer_id,
-                FollowRow.status == FollowStatus.ACTIVE,
-                ActivityRow.visibility.in_([Visibility.FOLLOWERS, Visibility.PUBLIC]),
-            )
+        followed = select(FollowRow.followee_id).where(
+            FollowRow.follower_id == viewer_id, FollowRow.status == FollowStatus.ACTIVE
+        )
+        # The viewer's own shared activity too, so they see what their followers see.
+        stmt = select(ActivityRow).where(
+            or_(ActivityRow.user_id.in_(followed), ActivityRow.user_id == viewer_id),
+            ActivityRow.visibility.in_([Visibility.FOLLOWERS, Visibility.PUBLIC]),
         )
         return await self._page(stmt, cursor, limit)
 

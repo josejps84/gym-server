@@ -117,18 +117,25 @@ async def test_feed(new_user: Any) -> None:
     items = (await ana.get("/feed")).json()["items"]
     summary = sorted((i["actor"]["username"], i["type"]) for i in items)
     assert summary == [
+        ("ana", "started_following"),
+        ("ana", "started_following"),
         ("jose", "routine_shared"),
         ("jose", "workout_completed"),
         ("luis", "started_following"),
     ]
-    following = next(i for i in items if i["type"] == "started_following")
+    workout = next(i for i in items if i["type"] == "workout_completed")
+    # Duration and sets, but not the weights lifted.
+    assert set(workout["workout"]["summary"]) == {"durationSeconds", "sets"}
+    following = next(i for i in items if i["actor"]["username"] == "luis")
     assert following["user"]["username"] == "ana"
     shared = next(i for i in items if i["type"] == "routine_shared")
     assert shared["routine"]["name"] == "Pierna"
     assert shared["routine"]["exerciseCount"] == 1
 
-    # Not following anyone: empty feed.
-    assert (await jose.get("/feed")).json()["items"] == []
+    # Not following anyone: only my own shared activity.
+    mine = sorted(i["type"] for i in (await jose.get("/feed")).json()["items"])
+    assert mine == ["routine_shared", "workout_completed"]
+    assert (await luis.get("/users/luis/activity")).json()["items"][0]["user"]["username"] == "ana"
 
 
 async def test_feed_pages(new_user: Any) -> None:
@@ -141,7 +148,8 @@ async def test_feed_pages(new_user: Any) -> None:
         )
     first = (await ana.get("/feed", params={"limit": 3})).json()
     second = (await ana.get("/feed", params={"limit": 3, "cursor": first["nextCursor"]})).json()
-    ended = [i["workout"]["endedAt"] for i in first["items"] + second["items"]]
+    # Ana's own "started following" is there too, after Jose's workouts.
+    ended = [i["workout"]["endedAt"] for i in first["items"] + second["items"] if i["workout"]]
     assert ended == sorted(ended, reverse=True)
     assert len(ended) == 5
     assert second["nextCursor"] is None
@@ -169,7 +177,11 @@ async def test_deleted_routine_leaves_the_feed(new_user: Any) -> None:
     ana: User = await new_user("ana")
     await ana.post(f"/users/{jose.id}/follow")
     legs = await _share_routine(jose, "Pierna")
-    assert len((await ana.get("/feed")).json()["items"]) == 1
+
+    async def shared() -> list[Any]:
+        return [i for i in (await ana.get("/feed")).json()["items"] if i["type"] == "routine_shared"]
+
+    assert len(await shared()) == 1
     await jose.put(f"/me/routines/{legs}", json=routine_body(updated_at=T0 + timedelta(hours=1), deleted=True))
-    assert (await ana.get("/feed")).json()["items"] == []
+    assert await shared() == []
     assert (await ana.get(f"/routines/{legs}")).status_code == 404
