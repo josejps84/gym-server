@@ -14,12 +14,13 @@ from app.domain.profile import (
     normalize_bio,
     normalize_display_name,
     normalize_username,
+    provider_photo_url,
 )
 from app.domain.social import Relationship
 from app.domain.sync import CustomExerciseRecord, RoutineRecord, exercise_ids
 from app.domain.visibility import Visibility, can_view, visible_levels
 from app.services.access import relationship, visible_profile_by_username
-from app.services.ports import AvatarStorage, IdentityAdmin, SignedUpload, UnitOfWork
+from app.services.ports import AvatarStorage, IdentityAdmin, PhotoFetcher, SignedUpload, UnitOfWork
 
 log = logging.getLogger(__name__)
 
@@ -83,9 +84,10 @@ async def custom_exercises_of(uow: UnitOfWork, routines: list[RoutineRecord]) ->
 
 
 class ProfileService:
-    def __init__(self, uow: UnitOfWork, storage: AvatarStorage) -> None:
+    def __init__(self, uow: UnitOfWork, storage: AvatarStorage, photos: PhotoFetcher) -> None:
         self._uow = uow
         self._storage = storage
+        self._photos = photos
 
     async def ensure(self, user: AuthUser) -> Profile:
         """The caller's profile, created on their first request with a placeholder username."""
@@ -104,7 +106,7 @@ class ProfileService:
             )
             if await self._uow.profiles.insert_if_absent(candidate):
                 await self._uow.commit()
-                return candidate
+                return await self._with_provider_photo(user, candidate)
             # Either the username was taken or a parallel request just created the profile.
             existing = await self._uow.profiles.get(user.id)
             if existing:
@@ -153,6 +155,29 @@ class ProfileService:
         path = f"{user_id}/{uuid4().hex}.{extension}"
         upload = await self._storage.create_upload_url(path)
         return AvatarUpload(upload, self._storage.public_url(path))
+
+    async def use_provider_photo(self, user: AuthUser) -> MeView:
+        """Copies the photo of the Google account into our storage and makes it the profile photo."""
+        url = provider_photo_url(user.picture)
+        if url is None:
+            raise Invalid("avatar.noProviderPhoto", "The account has no photo from its sign-in provider")
+        data, content_type = await self._photos.fetch(url)
+        extension = AVATAR_TYPES.get(content_type)
+        if extension is None:
+            raise Invalid("avatar.type", "Use a JPEG, PNG or WebP image")
+        path = f"{user.id}/{uuid4().hex}.{extension}"
+        await self._storage.upload(path, data, content_type)
+        return await self.update_me(user.id, ProfilePatch(avatar_url=self._storage.public_url(path)))
+
+    async def _with_provider_photo(self, user: AuthUser, profile: Profile) -> Profile:
+        """New profiles start with the Google photo when there is one; without it if that fails."""
+        if provider_photo_url(user.picture) is None:
+            return profile
+        try:
+            return (await self.use_provider_photo(user)).profile
+        except Exception:
+            log.warning("Could not copy the provider photo of %s", user.id, exc_info=True)
+            return profile
 
     async def public_profile(self, viewer_id: UUID, username: str) -> PublicProfileView:
         profile = await visible_profile_by_username(self._uow, viewer_id, username)

@@ -6,7 +6,13 @@ import pytest
 
 from app.domain.errors import Invalid
 from app.domain.pagination import Cursor, page_of
-from app.domain.profile import generated_username, normalize_bio, normalize_display_name, normalize_username
+from app.domain.profile import (
+    generated_username,
+    normalize_bio,
+    normalize_display_name,
+    normalize_username,
+    provider_photo_url,
+)
 from app.domain.sync import exercise_ids, remap_exercises, should_replace
 from app.domain.visibility import FollowStatus, Visibility, can_view, follow_status_for, visible_levels
 from app.rate_limit import RateLimiter
@@ -106,3 +112,19 @@ def test_rate_limiter_counts_per_key_and_minute() -> None:
 def test_rate_limiter_off_with_zero() -> None:
     limiter = RateLimiter(0)
     assert all(limiter.hit("a") is None for _ in range(1000))
+
+
+def test_provider_photo_url_only_trusts_google_and_asks_for_512_px() -> None:
+    assert (
+        provider_photo_url("https://lh3.googleusercontent.com/a/x=s96-c")
+        == "https://lh3.googleusercontent.com/a/x=s512-c"
+    )
+    assert provider_photo_url("https://lh3.googleusercontent.com/a/x") == "https://lh3.googleusercontent.com/a/x"
+    for raw in [
+        None,
+        "",
+        "http://lh3.googleusercontent.com/a",
+        "https://evil.example/a",
+        "https://lh3.googleusercontent.com:8443/a",
+    ]:
+        assert provider_photo_url(raw) is None

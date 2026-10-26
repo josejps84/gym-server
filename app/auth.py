@@ -25,6 +25,8 @@ class AuthUser:
     email: str | None = None
     # Full name from Google / Apple, used as the first display name.
     name: str | None = None
+    # Photo from Google; user_metadata can be edited by the user, so it is only a hint (see provider_photo_url).
+    picture: str | None = None
 
 
 def jwks_resolver(jwks_url: str) -> KeyResolver:
@@ -65,6 +67,7 @@ class TokenVerifier:
                 id=UUID(claims["sub"]),
                 email=claims.get("email"),
                 name=metadata.get("full_name") or metadata.get("name"),
+                picture=metadata.get("avatar_url") or metadata.get("picture"),
             )
         except (jwt.PyJWTError, ValueError) as error:
             raise InvalidToken(str(error)) from error

@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import httpx
 
-from tests.conftest import STORAGE_PREFIX, FakeIdentity, FakeStorage, User, make_token, routine_body
+from tests.conftest import STORAGE_PREFIX, FakeIdentity, FakePhotos, FakeStorage, User, make_token, routine_body
 
 
 async def test_first_call_creates_the_profile_with_the_login_name(client: httpx.AsyncClient) -> None:
@@ -113,3 +113,69 @@ async def test_delete_account(new_user: Any, storage: FakeStorage, identity: Fak
     assert (await ana.get("/me")).json()["followingCount"] == 0
     # Retrying is fine (e.g. after a Supabase failure).
     assert (await jose.delete("/me")).status_code == 204
+
+
+GOOGLE_PHOTO = "https://lh3.googleusercontent.com/a/ACg8ocXyz=s96-c"
+
+
+def google_headers(user_id: Any, picture: str = GOOGLE_PHOTO) -> dict[str, str]:
+    token = make_token(user_id, user_metadata={"full_name": "José", "avatar_url": picture})
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def test_first_google_sign_in_copies_the_google_photo(
+    client: httpx.AsyncClient, storage: FakeStorage, photos: FakePhotos
+) -> None:
+    user_id = uuid4()
+    body = (await client.get("/me", headers=google_headers(user_id))).json()
+    assert photos.fetched == ["https://lh3.googleusercontent.com/a/ACg8ocXyz=s512-c"]
+    [(path, (data, content_type))] = storage.stored.items()
+    assert path.startswith(f"{user_id}/") and path.endswith(".jpg")
+    assert (data, content_type) == (b"photo", "image/jpeg")
+    assert body["avatarUrl"] == STORAGE_PREFIX + path
+    # Only on creation: later calls leave the photo alone.
+    await client.get("/me", headers=google_headers(user_id))
+    assert len(photos.fetched) == 1
+
+
+async def test_the_profile_is_created_even_if_the_photo_cannot_be_copied(
+    client: httpx.AsyncClient, photos: FakePhotos
+) -> None:
+    photos.failing = True
+    response = await client.get("/me", headers=google_headers(uuid4()))
+    assert response.status_code == 200
+    assert response.json()["avatarUrl"] is None
+
+
+async def test_photos_from_untrusted_hosts_are_never_fetched(client: httpx.AsyncClient, photos: FakePhotos) -> None:
+    for picture in [
+        "https://evil.example/a.jpg",
+        "http://lh3.googleusercontent.com/a",
+        "https://googleusercontent.com.evil.io/a",
+    ]:
+        headers = google_headers(uuid4(), picture)
+        assert (await client.get("/me", headers=headers)).json()["avatarUrl"] is None
+        refused = await client.post("/me/avatar/provider-photo", headers=headers)
+        assert refused.status_code == 422
+        assert refused.json()["error"] == "avatar.noProviderPhoto"
+    assert photos.fetched == []
+
+
+async def test_use_the_google_photo_later_replaces_the_current_one(
+    client: httpx.AsyncClient, storage: FakeStorage, photos: FakePhotos
+) -> None:
+    user_id = uuid4()
+    headers = google_headers(user_id)
+    first = (await client.get("/me", headers=headers)).json()["avatarUrl"]
+    await client.patch("/me", headers=headers, json={"avatarUrl": None})
+    again = await client.post("/me/avatar/provider-photo", headers=headers)
+    assert again.status_code == 200
+    assert again.json()["avatarUrl"] not in (None, first)
+    assert storage.deleted == [first.removeprefix(STORAGE_PREFIX)]
+
+
+async def test_provider_photo_must_be_an_image_type_we_keep(client: httpx.AsyncClient, photos: FakePhotos) -> None:
+    photos.content_type = "image/gif"
+    headers = google_headers(uuid4())
+    assert (await client.get("/me", headers=headers)).json()["avatarUrl"] is None
+    assert (await client.post("/me/avatar/provider-photo", headers=headers)).json()["error"] == "avatar.type"

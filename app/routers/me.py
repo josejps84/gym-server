@@ -83,6 +83,12 @@ async def avatar_upload_url(body: AvatarUploadIn, user: UserDep, service: Profil
     )
 
 
+@router.post("/avatar/provider-photo", dependencies=[Depends(current_profile)])
+async def use_provider_photo(user: UserDep, service: ProfileServiceDep) -> MeOut:
+    """Makes the Google account's photo the profile photo (a copy in our storage)."""
+    return _me_out(await service.use_provider_photo(user))
+
+
 @router.put("/featured-routines")
 async def set_featured_routines(
     body: FeaturedRoutinesIn, profile: ProfileDep, service: RoutineServiceDep

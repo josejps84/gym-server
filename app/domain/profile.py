@@ -2,6 +2,7 @@ import re
 import secrets
 from dataclasses import dataclass
 from datetime import datetime
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from app.domain.errors import Invalid
@@ -10,6 +11,10 @@ USERNAME_MIN = 3
 USERNAME_MAX = 30
 DISPLAY_NAME_MAX = 50
 BIO_MAX = 160
+AVATAR_SIZE = 512
+# Hosts of sign-in providers' photos the server will copy. Never any URL: that would let a user make the
+# server fetch whatever they put in their (editable) user_metadata.
+PROVIDER_PHOTO_HOSTS = (".googleusercontent.com",)
 
 _USERNAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9._]*[a-z0-9])?$")
 
@@ -52,3 +57,15 @@ def normalize_bio(raw: str) -> str:
 def generated_username() -> str:
     """Placeholder given on the first login until the user picks one."""
     return f"user{secrets.randbelow(10**8):08d}"
+
+
+def provider_photo_url(raw: str | None) -> str | None:
+    """The sign-in provider's photo, asked at AVATAR_SIZE, or None if it is not one we trust."""
+    if not raw:
+        return None
+    parts = urlsplit(raw)
+    host = parts.hostname or ""
+    if parts.scheme != "https" or parts.port not in (None, 443) or not host.endswith(PROVIDER_PHOTO_HOSTS):
+        return None
+    # Google photo URLs end with a size, e.g. "=s96-c" (96 px, cropped).
+    return re.sub(r"=s\d+(-c)?$", f"=s{AVATAR_SIZE}-c", raw)

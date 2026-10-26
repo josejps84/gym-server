@@ -61,7 +61,7 @@ UowDep = Annotated[UnitOfWork, Depends(get_uow)]
 
 
 async def current_profile(user: UserDep, uow: UowDep, container: ContainerDep) -> Profile:
-    return await ProfileService(uow, container.storage).ensure(user)
+    return await ProfileService(uow, container.storage, container.photos).ensure(user)
 
 
 ProfileDep = Annotated[Profile, Depends(current_profile)]
@@ -78,7 +78,7 @@ PageDep = Annotated[tuple[Cursor | None, int], Depends(page_params)]
 
 
 def profile_service(uow: UowDep, container: ContainerDep) -> ProfileService:
-    return ProfileService(uow, container.storage)
+    return ProfileService(uow, container.storage, container.photos)
 
 
 def account_service(uow: UowDep, container: ContainerDep) -> AccountService:

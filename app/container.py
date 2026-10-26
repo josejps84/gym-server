@@ -7,9 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.auth import TokenVerifier, jwks_resolver
 from app.config import Settings
+from app.integrations.photos import HttpPhotoFetcher
 from app.integrations.supabase import SupabaseAvatarStorage, SupabaseIdentityAdmin
 from app.rate_limit import RateLimiter
-from app.services.ports import AvatarStorage, IdentityAdmin
+from app.services.ports import AvatarStorage, IdentityAdmin, PhotoFetcher
 
 
 @dataclass
@@ -20,6 +21,7 @@ class Container:
     verifier: TokenVerifier
     storage: AvatarStorage
     identity: IdentityAdmin
+    photos: PhotoFetcher
     rate_limiter: RateLimiter
     http: httpx.AsyncClient | None = field(default=None)
 
@@ -53,6 +55,7 @@ def build_container(settings: Settings) -> Container:
         ),
         storage=SupabaseAvatarStorage(http, settings.supabase_url, service_key, settings.avatars_bucket),
         identity=SupabaseIdentityAdmin(http, settings.supabase_url, service_key),
+        photos=HttpPhotoFetcher(http),
         rate_limiter=RateLimiter(settings.rate_limit_per_minute),
         http=http,
     )

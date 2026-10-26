@@ -28,7 +28,7 @@ from app.container import Container
 from app.main import create_app
 from app.rate_limit import RateLimiter
 from app.repositories.tables import Base
-from app.services.ports import SignedUpload
+from app.services.ports import SignedUpload, UpstreamError
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "postgresql+asyncpg://gym:gym@localhost:5433/gym_test")
 ISSUER = "https://supabase.test/auth/v1"
@@ -65,8 +65,13 @@ class FakeStorage:
     deleted: list[str] = field(default_factory=list)
     objects: dict[str, list[str]] = field(default_factory=dict)
 
+    stored: dict[str, tuple[bytes, str]] = field(default_factory=dict)
+
     def public_url(self, path: str) -> str:
         return STORAGE_PREFIX + path
+
+    async def upload(self, path: str, data: bytes, content_type: str) -> None:
+        self.stored[path] = (data, content_type)
 
     async def create_upload_url(self, path: str) -> SignedUpload:
         self.uploads.append(path)
@@ -77,6 +82,21 @@ class FakeStorage:
 
     async def list_paths(self, prefix: str) -> list[str]:
         return self.objects.get(prefix, [])
+
+
+@dataclass
+class FakePhotos:
+    """Serves `content_type` for every URL, or fails when `failing`."""
+
+    fetched: list[str] = field(default_factory=list)
+    content_type: str = "image/jpeg"
+    failing: bool = False
+
+    async def fetch(self, url: str) -> tuple[bytes, str]:
+        if self.failing:
+            raise UpstreamError("down")
+        self.fetched.append(url)
+        return b"photo", self.content_type
 
 
 @dataclass
@@ -127,8 +147,17 @@ def identity() -> FakeIdentity:
     return FakeIdentity()
 
 
+@pytest.fixture
+def photos() -> FakePhotos:
+    return FakePhotos()
+
+
 def build_test_container(
-    engine: AsyncEngine, storage: FakeStorage, identity: FakeIdentity, rate_limit: int = 0
+    engine: AsyncEngine,
+    storage: FakeStorage,
+    identity: FakeIdentity,
+    rate_limit: int = 0,
+    photos: FakePhotos | None = None,
 ) -> Container:
     return Container(
         settings=Settings(database_url=TEST_DATABASE_URL, supabase_url="https://supabase.test"),
@@ -137,15 +166,16 @@ def build_test_container(
         verifier=verifier_for_tests(),
         storage=storage,
         identity=identity,
+        photos=photos or FakePhotos(),
         rate_limiter=RateLimiter(rate_limit),
     )
 
 
 @pytest.fixture
 async def client(
-    engine: AsyncEngine, clean_db: None, storage: FakeStorage, identity: FakeIdentity
+    engine: AsyncEngine, clean_db: None, storage: FakeStorage, identity: FakeIdentity, photos: FakePhotos
 ) -> AsyncIterator[httpx.AsyncClient]:
-    app = create_app(build_test_container(engine, storage, identity))
+    app = create_app(build_test_container(engine, storage, identity, photos=photos))
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
         yield http
