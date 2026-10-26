@@ -13,6 +13,9 @@ from app.domain.visibility import Visibility
 
 JsonObject = dict[str, Any]
 
+# Routines shown on a profile.
+FEATURED_MAX = 10
+
 
 @dataclass(frozen=True, slots=True)
 class RoutineRecord:

@@ -60,6 +60,22 @@ async def test_featured_routines_with_custom_exercises(new_user: Any) -> None:
     assert (await jose.get("/me")).json()["featuredRoutineIds"] == [legs]
 
 
+async def test_shared_routines_show_on_the_profile_in_the_order_shared(new_user: Any) -> None:
+    jose: User = await new_user("jose")
+    ana: User = await new_user("ana")
+    ids = [await _share_routine(jose, f"Rutina {i}") for i in range(11)]
+    profile = (await ana.get("/users/jose")).json()
+    # Up to ten; the eleventh stays shared but off the profile.
+    assert [r["id"] for r in profile["featuredRoutines"]] == ids[:10]
+
+    later = T0 + timedelta(hours=1)
+    await jose.put(f"/me/routines/{ids[0]}", json=routine_body("Rutina 0", updated_at=later))
+    await jose.put(f"/me/routines/{ids[10]}", json=routine_body("Rutina 10", visibility="public", updated_at=later))
+    # Uploading a shared routine again keeps its place.
+    await jose.put(f"/me/routines/{ids[1]}", json=routine_body("Rutina 1b", visibility="public", updated_at=later))
+    assert (await jose.get("/me")).json()["featuredRoutineIds"] == [*ids[1:10], ids[10]]
+
+
 async def test_copy_a_routine(new_user: Any) -> None:
     jose: User = await new_user("jose")
     ana: User = await new_user("ana")

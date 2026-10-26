@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from app.domain.activity import Activity, ActivityType
 from app.domain.errors import Conflict
-from app.domain.sync import Changes, CustomExerciseRecord, RoutineRecord, SessionRecord, should_replace
+from app.domain.sync import FEATURED_MAX, Changes, CustomExerciseRecord, RoutineRecord, SessionRecord, should_replace
 from app.services.ports import UnitOfWork
 
 CHANGES_LIMIT = 200
@@ -27,11 +27,18 @@ class SyncService:
             await self._uow.activities.upsert(
                 Activity(uuid4(), user_id, ActivityType.ROUTINE_SHARED, saved.id, saved.visibility, datetime.now(UTC))
             )
+            await self._feature(user_id, saved.id)
         else:
             await self._uow.activities.delete_for(user_id, ActivityType.ROUTINE_SHARED, saved.id)
             await self._uow.featured.remove(saved.id)
         await self._uow.commit()
         return saved
+
+    async def _feature(self, user_id: UUID, routine_id: UUID) -> None:
+        """A newly shared routine goes at the end of the profile's routines, while there is room."""
+        featured = await self._uow.featured.ids_of(user_id)
+        if routine_id not in featured and len(featured) < FEATURED_MAX:
+            await self._uow.featured.replace(user_id, [*featured, routine_id])
 
     async def put_session(self, user_id: UUID, incoming: SessionRecord) -> SessionRecord:
         stored = await self._uow.sessions.get(incoming.id)

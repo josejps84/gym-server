@@ -4,13 +4,11 @@ from uuid import UUID, uuid4
 
 from app.domain.errors import Invalid, NotFound
 from app.domain.profile import Profile
-from app.domain.sync import CustomExerciseRecord, RoutineRecord, copy_routine
+from app.domain.sync import FEATURED_MAX, CustomExerciseRecord, RoutineRecord, copy_routine
 from app.domain.visibility import can_view
 from app.services.access import relationship, visible_profile
 from app.services.ports import UnitOfWork
 from app.services.profiles import custom_exercises_of
-
-FEATURED_MAX = 10
 
 
 @dataclass(frozen=True, slots=True)
