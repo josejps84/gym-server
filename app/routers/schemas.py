@@ -10,7 +10,14 @@ from pydantic.alias_generators import to_camel
 from app.domain.activity import ActivityType
 from app.domain.profile import Profile
 from app.domain.social import Connection, ReportReason
-from app.domain.sync import CustomExerciseRecord, RoutineRecord, SessionRecord
+from app.domain.sync import (
+    TUTORIALS_MAX,
+    CustomExerciseRecord,
+    RoutineRecord,
+    SessionRecord,
+    TutorialEntries,
+    TutorialEntry,
+)
 from app.domain.visibility import FollowStatus, Visibility
 
 NAME_MAX = 100
@@ -323,3 +330,41 @@ class Paged[T](ApiModel):
 
 class Health(ApiModel):
     status: Literal["ok"]
+
+
+# --- Tutorials --------------------------------------------------------------------------------
+
+TutorialId = Annotated[str, Field(pattern=r"^[A-Za-z][A-Za-z0-9_-]{0,39}$")]
+
+
+class TutorialEntryIn(ApiModel):
+    done: bool
+    changed_at: AwareDatetime
+
+
+class TutorialsIn(ApiModel):
+    entries: Annotated[dict[TutorialId, TutorialEntryIn], Field(max_length=TUTORIALS_MAX)]
+
+    def to_entries(self) -> TutorialEntries:
+        return {
+            tutorial_id: TutorialEntry(done=entry.done, changed_at=entry.changed_at)
+            for tutorial_id, entry in self.entries.items()
+        }
+
+
+class TutorialEntryOut(ApiModel):
+    done: bool
+    changed_at: datetime
+
+
+class TutorialsOut(ApiModel):
+    entries: dict[str, TutorialEntryOut]
+
+    @classmethod
+    def of(cls, entries: TutorialEntries) -> "TutorialsOut":
+        return cls(
+            entries={
+                tutorial_id: TutorialEntryOut(done=entry.done, changed_at=entry.changed_at)
+                for tutorial_id, entry in entries.items()
+            }
+        )

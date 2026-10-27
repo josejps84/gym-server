@@ -12,6 +12,7 @@ from app.repositories.sync import (
     SqlFeaturedRoutineRepository,
     SqlRoutineRepository,
     SqlSessionRepository,
+    SqlTutorialRepository,
 )
 from app.services.ports import (
     ActivityRepository,
@@ -23,6 +24,7 @@ from app.services.ports import (
     ReportRepository,
     RoutineRepository,
     SessionRepository,
+    TutorialRepository,
 )
 
 
@@ -40,6 +42,7 @@ class SqlUnitOfWork:
         self.exercises: ExerciseRepository = SqlExerciseRepository(session)
         self.featured: FeaturedRoutineRepository = SqlFeaturedRoutineRepository(session)
         self.activities: ActivityRepository = SqlActivityRepository(session)
+        self.tutorials: TutorialRepository = SqlTutorialRepository(session)
 
     async def commit(self) -> None:
         await self._session.commit()

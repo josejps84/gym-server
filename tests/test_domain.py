@@ -13,7 +13,7 @@ from app.domain.profile import (
     normalize_username,
     provider_photo_url,
 )
-from app.domain.sync import exercise_ids, remap_exercises, should_replace
+from app.domain.sync import TutorialEntry, exercise_ids, merge_tutorials, remap_exercises, should_replace
 from app.domain.visibility import FollowStatus, Visibility, can_view, follow_status_for, visible_levels
 from app.rate_limit import RateLimiter
 
@@ -128,3 +128,21 @@ def test_provider_photo_url_only_trusts_google_and_asks_for_512_px() -> None:
         "https://lh3.googleusercontent.com:8443/a",
     ]:
         assert provider_photo_url(raw) is None
+
+
+def test_tutorials_merge_entry_by_entry_and_the_latest_change_wins() -> None:
+    t0 = datetime(2026, 10, 1, tzinfo=UTC)
+    later = t0 + timedelta(minutes=5)
+    stored = {"logSets": TutorialEntry(True, t0), "rest": TutorialEntry(True, later)}
+    incoming = {
+        "logSets": TutorialEntry(False, later),  # replayed on another device
+        "rest": TutorialEntry(False, t0),  # older than what is stored
+        "history": TutorialEntry(True, t0),  # new
+    }
+    assert merge_tutorials(stored, incoming) == {
+        "logSets": TutorialEntry(False, later),
+        "rest": TutorialEntry(True, later),
+        "history": TutorialEntry(True, t0),
+    }
+    # The same version again changes nothing.
+    assert merge_tutorials(stored, stored) == stored

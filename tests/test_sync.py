@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -132,3 +132,36 @@ async def test_a_shared_session_creates_one_activity(new_user: Any) -> None:
         json=session_body(visibility="private", updated_at=T0 + timedelta(minutes=2)),
     )
     assert [i for i in (await ana.get("/feed")).json()["items"] if i["type"] == "workout_completed"] == []
+
+
+def tutorial(done: bool, at: datetime) -> dict[str, Any]:
+    return {"done": done, "changedAt": at.isoformat()}
+
+
+async def test_tutorials_are_shared_by_the_users_devices(new_user: Any) -> None:
+    jose: User = await new_user("jose")
+    ana: User = await new_user("ana")
+    assert (await jose.get("/me/tutorials")).json() == {"entries": {}}
+
+    phone = {"logSets": tutorial(True, T0), "rest": tutorial(True, T0)}
+    assert (await jose.put("/me/tutorials", json={"entries": phone})).status_code == 200
+
+    # Another device replays one and finishes another: each entry keeps its latest change.
+    later = T0 + timedelta(minutes=5)
+    tablet = {"logSets": tutorial(False, later), "history": tutorial(True, later), "rest": tutorial(False, T0)}
+    merged = (await jose.put("/me/tutorials", json={"entries": tablet})).json()["entries"]
+    assert {k: v["done"] for k, v in merged.items()} == {"logSets": False, "rest": True, "history": True}
+    assert (await jose.get("/me/tutorials")).json()["entries"] == merged
+
+    # Each user has their own.
+    assert (await ana.get("/me/tutorials")).json() == {"entries": {}}
+
+
+async def test_tutorials_validation(new_user: Any) -> None:
+    jose: User = await new_user("jose")
+    naive = {"logSets": {"done": True, "changedAt": "2026-10-01T10:00:00"}}
+    assert (await jose.put("/me/tutorials", json={"entries": naive})).status_code == 422
+    bad_id = {"not an id!": tutorial(True, T0)}
+    assert (await jose.put("/me/tutorials", json={"entries": bad_id})).status_code == 422
+    too_many = {f"t{i}": tutorial(True, T0) for i in range(51)}
+    assert (await jose.put("/me/tutorials", json={"entries": too_many})).status_code == 422

@@ -13,6 +13,8 @@ from app.routers.schemas import (
     RoutineOut,
     SessionIn,
     SessionOut,
+    TutorialsIn,
+    TutorialsOut,
 )
 
 router = APIRouter(prefix="/me", tags=["sync"])
@@ -69,6 +71,18 @@ async def put_exercise(
         deleted_at=body.deleted_at,
     )
     return ExerciseOut.of(await service.put_exercise(profile.id, incoming))
+
+
+@router.get("/tutorials")
+async def get_tutorials(profile: ProfileDep, service: SyncServiceDep) -> TutorialsOut:
+    """Which app tutorials the user has seen, as merged from all their devices."""
+    return TutorialsOut.of(await service.tutorials(profile.id))
+
+
+@router.put("/tutorials")
+async def put_tutorials(body: TutorialsIn, profile: ProfileDep, service: SyncServiceDep) -> TutorialsOut:
+    """Merges this device's entries (the latest change of each tutorial wins) and returns the result."""
+    return TutorialsOut.of(await service.put_tutorials(profile.id, body.to_entries()))
 
 
 @router.get("/changes")

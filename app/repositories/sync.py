@@ -1,19 +1,21 @@
 from collections.abc import Collection, Sequence
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy import insert as plain_insert
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.sync import CustomExerciseRecord, RoutineRecord, SessionRecord
+from app.domain.sync import CustomExerciseRecord, RoutineRecord, SessionRecord, TutorialEntries, TutorialEntry
 from app.domain.visibility import Visibility
 from app.repositories.tables import (
     CHANGE_SEQ,
     CustomExerciseRow,
     FeaturedRoutineRow,
     RoutineRow,
+    TutorialProgressRow,
     WorkoutSessionRow,
 )
 
@@ -231,3 +233,30 @@ class SqlFeaturedRoutineRepository:
 
     async def remove(self, routine_id: UUID) -> None:
         await self._session.execute(delete(FeaturedRoutineRow).where(FeaturedRoutineRow.routine_id == routine_id))
+
+
+class SqlTutorialRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self, user_id: UUID) -> TutorialEntries:
+        row = await self._session.get(TutorialProgressRow, user_id)
+        if not row:
+            return {}
+        return {
+            tutorial_id: TutorialEntry(done=entry["done"], changed_at=datetime.fromisoformat(entry["changedAt"]))
+            for tutorial_id, entry in row.entries.items()
+        }
+
+    async def save(self, user_id: UUID, entries: TutorialEntries) -> None:
+        values = {
+            tutorial_id: {"done": entry.done, "changedAt": entry.changed_at.isoformat()}
+            for tutorial_id, entry in entries.items()
+        }
+        statement = insert(TutorialProgressRow).values(user_id=user_id, entries=values)
+        await self._session.execute(
+            statement.on_conflict_do_update(
+                index_elements=[TutorialProgressRow.user_id],
+                set_={"entries": statement.excluded.entries, "updated_at": func.now()},
+            )
+        )

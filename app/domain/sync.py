@@ -116,3 +116,28 @@ def copy_routine(
         deleted_at=None,
         change_seq=0,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class TutorialEntry:
+    """Whether the user has seen one of the app's tutorials, and when that last changed."""
+
+    done: bool
+    changed_at: datetime
+
+
+# Tutorial id -> entry. Ids are the app's: unknown ones are kept, for newer app versions.
+TutorialEntries = dict[str, TutorialEntry]
+
+TUTORIALS_MAX = 50
+
+
+def merge_tutorials(stored: TutorialEntries, incoming: TutorialEntries) -> TutorialEntries:
+    """Entry by entry, the latest change wins: a tutorial seen on one device and another replayed on
+    a second device both survive. Same timestamp keeps the stored one, so uploads are idempotent."""
+    merged = dict(stored)
+    for tutorial_id, entry in incoming.items():
+        current = merged.get(tutorial_id)
+        if current is None or entry.changed_at > current.changed_at:
+            merged[tutorial_id] = entry
+    return merged

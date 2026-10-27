@@ -136,6 +136,15 @@ class CustomExerciseRow(Base):
     __table_args__ = (Index("ix_custom_exercises_owner_id_change_seq", "owner_id", "change_seq"),)
 
 
+class TutorialProgressRow(Base):
+    __tablename__ = "tutorial_progress"
+
+    user_id: Mapped[UUID] = mapped_column(_profile_fk(), primary_key=True)
+    # {tutorialId: {"done": bool, "changedAt": ISO}}
+    entries: Mapped[dict[str, Any]]
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
 class WorkoutSessionRow(Base):
     __tablename__ = "workout_sessions"
 

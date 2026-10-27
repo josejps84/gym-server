@@ -3,7 +3,16 @@ from uuid import UUID, uuid4
 
 from app.domain.activity import Activity, ActivityType
 from app.domain.errors import Conflict
-from app.domain.sync import FEATURED_MAX, Changes, CustomExerciseRecord, RoutineRecord, SessionRecord, should_replace
+from app.domain.sync import (
+    FEATURED_MAX,
+    Changes,
+    CustomExerciseRecord,
+    RoutineRecord,
+    SessionRecord,
+    TutorialEntries,
+    merge_tutorials,
+    should_replace,
+)
 from app.services.ports import UnitOfWork
 
 CHANGES_LIMIT = 200
@@ -66,6 +75,18 @@ class SyncService:
         saved = await self._uow.exercises.save(incoming)
         await self._uow.commit()
         return saved
+
+    async def tutorials(self, user_id: UUID) -> TutorialEntries:
+        return await self._uow.tutorials.get(user_id)
+
+    async def put_tutorials(self, user_id: UUID, incoming: TutorialEntries) -> TutorialEntries:
+        """Merges a device's tutorials with the stored ones and returns the result for it to keep."""
+        stored = await self._uow.tutorials.get(user_id)
+        merged = merge_tutorials(stored, incoming)
+        if merged != stored:
+            await self._uow.tutorials.save(user_id, merged)
+            await self._uow.commit()
+        return merged
 
     async def changes(self, user_id: UUID, since: int, limit: int = CHANGES_LIMIT) -> Changes:
         """Everything changed after `since`, oldest first, at most `limit` records."""

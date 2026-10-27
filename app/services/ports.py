@@ -10,7 +10,7 @@ from app.domain.activity import Activity, ActivityType
 from app.domain.pagination import Cursor
 from app.domain.profile import Profile
 from app.domain.social import Connection, Follow, Report
-from app.domain.sync import CustomExerciseRecord, RoutineRecord, SessionRecord
+from app.domain.sync import CustomExerciseRecord, RoutineRecord, SessionRecord, TutorialEntries
 from app.domain.visibility import FollowStatus, Visibility
 
 
@@ -88,6 +88,11 @@ class ExerciseRepository(Protocol):
     async def changed_since(self, owner_id: UUID, seq: int, limit: int) -> list[CustomExerciseRecord]: ...
 
 
+class TutorialRepository(Protocol):
+    async def get(self, user_id: UUID) -> TutorialEntries: ...
+    async def save(self, user_id: UUID, entries: TutorialEntries) -> None: ...
+
+
 class FeaturedRoutineRepository(Protocol):
     async def ids_of(self, user_id: UUID) -> list[UUID]: ...
     async def replace(self, user_id: UUID, routine_ids: Sequence[UUID]) -> None: ...
@@ -118,6 +123,7 @@ class UnitOfWork(Protocol):
     exercises: ExerciseRepository
     featured: FeaturedRoutineRepository
     activities: ActivityRepository
+    tutorials: TutorialRepository
 
     async def commit(self) -> None: ...
 
