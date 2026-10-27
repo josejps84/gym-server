@@ -201,6 +201,16 @@ class ActivityRow(Base):
     )
 
 
+class ActivityReactionRow(Base):
+    """A 💪 on someone's activity: one per person and activity."""
+
+    __tablename__ = "activity_reactions"
+
+    activity_id: Mapped[UUID] = mapped_column(ForeignKey("activities.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(_profile_fk(), primary_key=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
 # Newest-first lists: a user's sessions, a user's activity and the feed.
 Index(
     "ix_workout_sessions_user_id_started_at",

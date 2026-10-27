@@ -1,14 +1,14 @@
 from collections.abc import Collection
 from uuid import UUID
 
-from sqlalchemy import Select, delete, or_, select, tuple_
+from sqlalchemy import Select, delete, func, or_, select, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.activity import Activity, ActivityType
 from app.domain.pagination import Cursor
 from app.domain.visibility import FollowStatus, Visibility
-from app.repositories.tables import ActivityRow, FollowRow
+from app.repositories.tables import ActivityReactionRow, ActivityRow, FollowRow
 
 
 def to_activity(row: ActivityRow) -> Activity:
@@ -41,6 +41,10 @@ class SqlActivityRepository:
                 index_elements=["user_id", "type", "ref_id"], set_={"visibility": activity.visibility}
             )
         )
+
+    async def get(self, activity_id: UUID) -> Activity | None:
+        row = await self._session.get(ActivityRow, activity_id)
+        return to_activity(row) if row else None
 
     async def delete_for(self, user_id: UUID, type_: ActivityType, ref_id: UUID) -> None:
         await self._session.execute(
@@ -75,3 +79,35 @@ class SqlActivityRepository:
             stmt.order_by(ActivityRow.created_at.desc(), ActivityRow.id.desc()).limit(limit)
         )
         return [to_activity(row) for row in rows]
+
+
+class SqlReactionRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, activity_id: UUID, user_id: UUID) -> None:
+        await self._session.execute(
+            insert(ActivityReactionRow).values(activity_id=activity_id, user_id=user_id).on_conflict_do_nothing()
+        )
+
+    async def remove(self, activity_id: UUID, user_id: UUID) -> None:
+        await self._session.execute(
+            delete(ActivityReactionRow).where(
+                ActivityReactionRow.activity_id == activity_id, ActivityReactionRow.user_id == user_id
+            )
+        )
+
+    async def summary(self, activity_ids: Collection[UUID], viewer_id: UUID) -> dict[UUID, tuple[int, bool]]:
+        """How many reactions each activity has, and whether the viewer is among them."""
+        if not activity_ids:
+            return {}
+        rows = await self._session.execute(
+            select(
+                ActivityReactionRow.activity_id,
+                func.count(),
+                func.bool_or(ActivityReactionRow.user_id == viewer_id),
+            )
+            .where(ActivityReactionRow.activity_id.in_(activity_ids))
+            .group_by(ActivityReactionRow.activity_id)
+        )
+        return {activity_id: (count, bool(mine)) for activity_id, count, mine in rows}
