@@ -19,8 +19,8 @@
 
 <h2>Resumen</h2>
 <p>La app funciona sin cuenta, y entonces todo se guarda solo en tu teléfono. Si creas una cuenta, guardamos una copia de
-tus datos para sincronizarlos y para las funciones sociales. No vendemos tus datos, no mostramos publicidad y no usamos
-herramientas de seguimiento.</p>
+tus datos para sincronizarlos y para las funciones sociales. No vendemos tus datos ni mostramos publicidad. Salvo que
+lo desactives, la app envía datos de uso para ayudarnos a mejorarla.</p>
 
 <h2>Responsable</h2>
 <p>$contact</p>
@@ -35,6 +35,11 @@ herramientas de seguimiento.</p>
   <li><strong>Social:</strong> a quién sigues, quién te sigue, a quién bloqueas y los reportes que envías.</li>
   <li><strong>Datos técnicos:</strong> al usar la API, nuestro servidor registra la dirección IP y la petición. Esos
   registros se borran a los 30 días.</li>
+  <li><strong>Datos de uso:</strong> salvo que lo desactives, qué pantallas abres y qué acciones haces en la app
+  (por ejemplo, empezar o terminar un entreno), con la versión de la app, el sistema del teléfono, tu idioma, tu nivel y
+  tu lugar de entrenamiento. Van con un identificador aleatorio del teléfono y, si tienes cuenta, con su identificador
+  interno; nunca con tu correo, tu nombre, tus pesos ni lo que escribes. Puedes desactivarlo al empezar a usar la app o
+  cuando quieras en <em>Ajustes → Datos → Compartir datos de uso</em>; lo que no se haya enviado se borra.</li>
 </ul>
 
 <h2>Qué ven otras personas</h2>
@@ -49,9 +54,11 @@ seguir a alguien, tus seguidores lo ven en su feed. Tus listas de seguidores y s
   <li>Las funciones sociales: perfiles, seguir, feed y rutinas compartidas.</li>
   <li>Enviarte los correos necesarios (confirmar la cuenta y recuperar la contraseña).</li>
   <li>Revisar los reportes y proteger a los usuarios frente a abusos.</li>
+  <li>Entender cómo se usa la app para decidir qué mejorar (si no lo has desactivado).</li>
 </ul>
-<p>La base legal es la ejecución del servicio que pides al crear la cuenta y, para la seguridad y la moderación,
-nuestro interés legítimo en mantener la app segura.</p>
+<p>La base legal es la ejecución del servicio que pides al crear la cuenta; para la seguridad y la moderación,
+nuestro interés legítimo en mantener la app segura; y, para los datos de uso, nuestro interés legítimo en mejorar la app, al
+que puedes oponerte en cualquier momento desactivándolos.</p>
 
 <h2>Proveedores</h2>
 <p>Usamos estos proveedores, que tratan los datos por cuenta nuestra. Sus servidores están en Estados Unidos:</p>
@@ -59,6 +66,7 @@ nuestro interés legítimo en mantener la app segura.</p>
   <li><strong>Supabase:</strong> inicio de sesión, base de datos y fotos de perfil.</li>
   <li><strong>Google Cloud:</strong> el servidor de la API y sus registros.</li>
   <li><strong>Resend:</strong> envío de correos.</li>
+  <li><strong>PostHog:</strong> datos de uso, salvo que los desactives. Se borran a los 12 meses.</li>
   <li><strong>Google:</strong> solo si eliges entrar con Google.</li>
 </ul>
 

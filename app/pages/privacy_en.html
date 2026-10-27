@@ -19,7 +19,8 @@
 
 <h2>Summary</h2>
 <p>The app works without an account, and then everything stays on your phone. If you create an account, we keep a copy
-of your data to sync it and for the social features. We don't sell your data, show ads or use tracking tools.</p>
+of your data to sync it and for the social features. We don't sell your data or show ads. Unless you turn it
+off, the app sends usage data to help us improve it.</p>
 
 <h2>Controller</h2>
 <p>$contact</p>
@@ -34,6 +35,11 @@ of your data to sync it and for the social features. We don't sell your data, sh
   <li><strong>Social:</strong> who you follow, who follows you, who you block and the reports you send.</li>
   <li><strong>Technical data:</strong> when you use the API, our server logs the IP address and the request. Those logs
   are deleted after 30 days.</li>
+  <li><strong>Usage data:</strong> unless you turn it off, which screens you open and what you do in the app (for
+  example, starting or finishing a workout), along with the app version, the phone's system, your language, your level
+  and where you train. It comes with a random identifier of the phone and, if you have an account, its internal
+  identifier; never your email, your name, your weights or what you type. You can turn it off when you start using the
+  app or at any time under <em>Settings → Data → Share usage data</em>; whatever hasn't been sent is deleted.</li>
 </ul>
 
 <h2>What other people see</h2>
@@ -48,9 +54,10 @@ see your followers and following lists.</p>
   <li>For the social features: profiles, following, the feed and shared routines.</li>
   <li>To send you the emails you need (confirming the account and resetting the password).</li>
   <li>To review reports and protect users from abuse.</li>
+  <li>To understand how the app is used and decide what to improve (unless you turned it off).</li>
 </ul>
-<p>The legal basis is providing the service you ask for when you create the account and, for safety and moderation, our
-legitimate interest in keeping the app safe.</p>
+<p>The legal basis is providing the service you ask for when you create the account; for safety and moderation, our
+legitimate interest in keeping the app safe; and, for usage data, our legitimate interest in improving the app, which you can object to at any time by turning it off.</p>
 
 <h2>Providers</h2>
 <p>We use these providers, which process the data on our behalf. Their servers are in the United States:</p>
@@ -58,6 +65,7 @@ legitimate interest in keeping the app safe.</p>
   <li><strong>Supabase:</strong> sign-in, database and profile photos.</li>
   <li><strong>Google Cloud:</strong> the API server and its logs.</li>
   <li><strong>Resend:</strong> sending emails.</li>
+  <li><strong>PostHog:</strong> usage data, unless you turn it off. It is deleted after 12 months.</li>
   <li><strong>Google:</strong> only if you choose to sign in with Google.</li>
 </ul>
 
