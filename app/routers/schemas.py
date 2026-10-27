@@ -317,6 +317,8 @@ class ActivityOut(ApiModel):
     workout: WorkoutOut | None = None
     routine: SharedRoutineOut | None = None
     user: ProfileCard | None = None
+    reactions: int = 0
+    reacted: bool = False
 
 
 class UserList(ApiModel):

@@ -12,6 +12,10 @@ class ActivityType(StrEnum):
     STARTED_FOLLOWING = "started_following"
 
 
+# What people can cheer (💪): someone else's finished workout.
+REACTABLE = frozenset({ActivityType.WORKOUT_COMPLETED})
+
+
 @dataclass(frozen=True, slots=True)
 class Activity:
     id: UUID

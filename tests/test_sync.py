@@ -24,11 +24,12 @@ async def test_routine_upload_is_idempotent_and_last_writer_wins(new_user: Any) 
 
 
 async def test_unknown_routine_exercise_fields_are_kept(new_user: Any) -> None:
+    # e.g. the app's supersets (`groupId`), which the server doesn't model.
     jose: User = await new_user("jose")
     body = routine_body()
-    body["exercises"][0]["supersetGroup"] = "A"
+    body["exercises"][0]["groupId"] = "g1"
     saved = (await jose.put(f"/me/routines/{uuid4()}", json=body)).json()
-    assert saved["exercises"][0]["supersetGroup"] == "A"
+    assert saved["exercises"][0]["groupId"] == "g1"
 
 
 async def test_ids_of_other_users_are_refused(new_user: Any) -> None:

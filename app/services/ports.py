@@ -100,6 +100,7 @@ class FeaturedRoutineRepository(Protocol):
 
 
 class ActivityRepository(Protocol):
+    async def get(self, activity_id: UUID) -> Activity | None: ...
     async def upsert(self, activity: Activity) -> None:
         """Creates it, or only updates the visibility if the user already has one for that ref."""
         ...
@@ -113,6 +114,14 @@ class ActivityRepository(Protocol):
         ...
 
 
+class ReactionRepository(Protocol):
+    async def add(self, activity_id: UUID, user_id: UUID) -> None: ...
+    async def remove(self, activity_id: UUID, user_id: UUID) -> None: ...
+    async def summary(self, activity_ids: Collection[UUID], viewer_id: UUID) -> dict[UUID, tuple[int, bool]]:
+        """Per activity: how many reactions, and whether the viewer reacted."""
+        ...
+
+
 class UnitOfWork(Protocol):
     profiles: ProfileRepository
     follows: FollowRepository
@@ -123,6 +132,7 @@ class UnitOfWork(Protocol):
     exercises: ExerciseRepository
     featured: FeaturedRoutineRepository
     activities: ActivityRepository
+    reactions: ReactionRepository
     tutorials: TutorialRepository
 
     async def commit(self) -> None: ...

@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.activities import SqlActivityRepository
+from app.repositories.activities import SqlActivityRepository, SqlReactionRepository
 from app.repositories.social import (
     SqlBlockRepository,
     SqlFollowRepository,
@@ -21,6 +21,7 @@ from app.services.ports import (
     FeaturedRoutineRepository,
     FollowRepository,
     ProfileRepository,
+    ReactionRepository,
     ReportRepository,
     RoutineRepository,
     SessionRepository,
@@ -42,6 +43,7 @@ class SqlUnitOfWork:
         self.exercises: ExerciseRepository = SqlExerciseRepository(session)
         self.featured: FeaturedRoutineRepository = SqlFeaturedRoutineRepository(session)
         self.activities: ActivityRepository = SqlActivityRepository(session)
+        self.reactions: ReactionRepository = SqlReactionRepository(session)
         self.tutorials: TutorialRepository = SqlTutorialRepository(session)
 
     async def commit(self) -> None:
