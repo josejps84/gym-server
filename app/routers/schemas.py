@@ -303,6 +303,25 @@ class WorkoutOut(ApiModel):
     summary: dict[str, Any]
 
 
+class PublicSetOut(ApiModel):
+    reps: int
+    kind: str | None = None
+
+
+class PublicWorkoutExerciseOut(ApiModel):
+    exercise_id: str
+    sets: list[PublicSetOut]
+    group_id: str | None = None
+
+
+class WorkoutDetailOut(ApiModel):
+    workout: WorkoutOut
+    owner: ProfileCard
+    exercises: list[PublicWorkoutExerciseOut]
+    # The owner's custom exercises among them; catalog ones every app already has.
+    custom_exercises: list[PublicExerciseOut]
+
+
 class SharedRoutineOut(ApiModel):
     id: UUID
     name: str

@@ -15,6 +15,7 @@ from app.services.profiles import AccountService, ProfileService
 from app.services.routines import RoutineService
 from app.services.social import FollowService, ModerationService
 from app.services.sync import SyncService
+from app.services.workouts import WorkoutService
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -105,6 +106,10 @@ def feed_service(uow: UowDep) -> FeedService:
     return FeedService(uow)
 
 
+def workout_service(uow: UowDep) -> WorkoutService:
+    return WorkoutService(uow)
+
+
 ProfileServiceDep = Annotated[ProfileService, Depends(profile_service)]
 AccountServiceDep = Annotated[AccountService, Depends(account_service)]
 FollowServiceDep = Annotated[FollowService, Depends(follow_service)]
@@ -112,3 +117,4 @@ ModerationServiceDep = Annotated[ModerationService, Depends(moderation_service)]
 SyncServiceDep = Annotated[SyncService, Depends(sync_service)]
 RoutineServiceDep = Annotated[RoutineService, Depends(routine_service)]
 FeedServiceDep = Annotated[FeedService, Depends(feed_service)]
+WorkoutServiceDep = Annotated[WorkoutService, Depends(workout_service)]

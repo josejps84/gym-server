@@ -68,13 +68,20 @@ class AvatarUpload:
 
 async def custom_exercises_of(uow: UnitOfWork, routines: list[RoutineRecord]) -> list[CustomExerciseRecord]:
     """The owners' own exercises the routines use, so others can see what each id is."""
+    return await owned_custom_exercises(
+        uow,
+        [(routine.owner_id, exercise_id) for routine in routines for exercise_id in exercise_ids(routine.exercises)],
+    )
+
+
+async def owned_custom_exercises(uow: UnitOfWork, uses: list[tuple[UUID, str]]) -> list[CustomExerciseRecord]:
+    """The custom exercises among (owner, exercise id) pairs, if they still exist and are the owner's."""
     wanted: dict[UUID, UUID] = {}
-    for routine in routines:
-        for exercise_id in exercise_ids(routine.exercises):
-            try:
-                wanted[UUID(exercise_id)] = routine.owner_id
-            except ValueError:
-                continue  # A catalog exercise ("seed-..."): every app already has it.
+    for owner_id, exercise_id in uses:
+        try:
+            wanted[UUID(exercise_id)] = owner_id
+        except ValueError:
+            continue  # A catalog exercise ("seed-..."): every app already has it.
     found = await uow.exercises.get_many(wanted.keys())
     return [
         exercise

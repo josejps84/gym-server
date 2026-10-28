@@ -141,3 +141,52 @@ def merge_tutorials(stored: TutorialEntries, incoming: TutorialEntries) -> Tutor
         if current is None or entry.changed_at > current.changed_at:
             merged[tutorial_id] = entry
     return merged
+
+
+# Set kinds others may see; anything else (or none) is a normal set.
+PUBLIC_SET_KINDS = frozenset({"warmup", "drop", "failure"})
+
+
+@dataclass(frozen=True, slots=True)
+class PublicSet:
+    reps: int
+    kind: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PublicWorkoutExercise:
+    exercise_id: str
+    sets: list[PublicSet]
+    # Superset / circuit the exercise belongs to.
+    group_id: str | None = None
+
+
+def public_exercises(session: SessionRecord) -> list[PublicWorkoutExercise]:
+    """What others see of a workout: its exercises and the reps of each done set. Never the weights,
+    the effort (RPE) or notes. `data` is the app's own JSON, so anything unexpected is skipped."""
+    result: list[PublicWorkoutExercise] = []
+    exercises = session.data.get("exercises")
+    for exercise in exercises if isinstance(exercises, list) else []:
+        if not isinstance(exercise, dict) or not isinstance(exercise.get("exerciseId"), str):
+            continue
+        raw_sets = exercise.get("sets")
+        sets: list[PublicSet] = []
+        for raw in raw_sets if isinstance(raw_sets, list) else []:
+            if not isinstance(raw, dict) or raw.get("completed") is not True:
+                continue
+            reps = raw.get("reps")
+            if not isinstance(reps, int) or isinstance(reps, bool) or reps < 0:
+                continue
+            kind = raw.get("kind")
+            sets.append(PublicSet(reps=reps, kind=kind if kind in PUBLIC_SET_KINDS else None))
+        if not sets:
+            continue
+        group_id = exercise.get("groupId")
+        result.append(
+            PublicWorkoutExercise(
+                exercise_id=exercise["exerciseId"],
+                sets=sets,
+                group_id=group_id if isinstance(group_id, str) else None,
+            )
+        )
+    return result
