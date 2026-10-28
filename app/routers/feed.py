@@ -4,6 +4,7 @@ from fastapi import APIRouter, status
 
 from app.dependencies import FeedServiceDep, PageDep, ProfileDep
 from app.domain.pagination import Page
+from app.domain.sync import SessionRecord
 from app.routers.schemas import ActivityOut, Paged, ProfileCard, SharedRoutineOut, WorkoutOut
 from app.services.feed import ActivityView
 
@@ -11,6 +12,17 @@ router = APIRouter(tags=["feed"])
 
 # What others see of a workout: how long and how many sets, not the weights.
 PUBLISHED_SUMMARY = ("durationSeconds", "sets")
+
+
+def workout_out(session: SessionRecord) -> WorkoutOut:
+    return WorkoutOut(
+        session_id=session.id,
+        name=session.name,
+        routine_id=session.routine_id,
+        started_at=session.started_at,
+        ended_at=session.ended_at,
+        summary={k: v for k, v in session.summary.items() if k in PUBLISHED_SUMMARY},
+    )
 
 
 def activity_out(view: ActivityView) -> ActivityOut:
@@ -23,14 +35,7 @@ def activity_out(view: ActivityView) -> ActivityOut:
         reacted=view.reacted,
     )
     if view.session:
-        out.workout = WorkoutOut(
-            session_id=view.session.id,
-            name=view.session.name,
-            routine_id=view.session.routine_id,
-            started_at=view.session.started_at,
-            ended_at=view.session.ended_at,
-            summary={k: v for k, v in view.session.summary.items() if k in PUBLISHED_SUMMARY},
-        )
+        out.workout = workout_out(view.session)
     if view.routine:
         out.routine = SharedRoutineOut(
             id=view.routine.id, name=view.routine.name, exercise_count=len(view.routine.exercises)
