@@ -19,6 +19,6 @@ async def test_email_links_land_on_a_page_that_opens_the_app(client: httpx.Async
     page = await client.get("/auth/callback", params={"code": "abc"})
     assert page.status_code == 200
     assert "Correo confirmado" in page.text
-    assert 'href="com.gymtracker.app://auth-callback"' in page.text
+    assert 'href="com.giimme.app://auth-callback"' in page.text
     assert "$" not in page.text.replace("${", "")
     assert "Email confirmed" in (await client.get("/auth/callback", params={"lang": "en"})).text

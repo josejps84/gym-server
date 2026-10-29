@@ -34,7 +34,7 @@ def create_app(container: Container | None = None) -> FastAPI:
         yield
         await container.close()
 
-    app = FastAPI(title="Gym server", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Giimme server", version="0.1.0", lifespan=lifespan)
     app.state.container = container
 
     app.add_middleware(
