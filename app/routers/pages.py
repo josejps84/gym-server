@@ -16,7 +16,7 @@ Language = Literal["es", "en"]
 LANGUAGES: tuple[Language, ...] = ("es", "en")
 PRIVACY_UPDATED = {"es": "26 de octubre de 2026", "en": "October 26, 2026"}
 # The app's deep link (NATIVE_REDIRECT in gym-app's SupabaseAuthGateway).
-APP_AUTH_URL = "com.gymtracker.app://auth-callback"
+APP_AUTH_URL = "com.giimme.app://auth-callback"
 _NO_CONTACT = {"es": "[Contacto pendiente]", "en": "[Contact pending]"}
 _DIR = Path(__file__).parent.parent / "pages"
 

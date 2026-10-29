@@ -1,6 +1,6 @@
-# Gym Server
+# Giimme Server
 
-Backend social de la app [gym-app](../gym-app): perfiles, seguir, copia en la nube de rutinas,
+Backend social de Giimme ([gym-app](../gym-app)): perfiles, seguir, copia en la nube de rutinas,
 sesiones y ejercicios propios, rutinas destacadas, feed de actividad, bloqueo y reportes.
 Diseño en el documento "Backend en la nube para perfiles sociales".
 
@@ -57,7 +57,7 @@ tests/             pytest; conftest.py tiene fakes de Storage/Auth y genera toke
 - **Política de privacidad:** `GET /privacy` (`?lang=es|en`, o según el navegador), en `app/pages/`. Al
   cambiarla, actualizar `PRIVACY_UPDATED` en `app/routers/pages.py`. El responsable sale de `PRIVACY_CONTACT`.
 - **Enlaces de los correos:** confirmar cuenta y cambiar contraseña llevan a `GET /auth/callback`, que en el
-  teléfono abre la app con el código (`com.gymtracker.app://auth-callback`) y en otro sitio explica qué hacer.
+  teléfono abre la app con el código (`com.giimme.app://auth-callback`) y en otro sitio explica qué hacer.
   Añadir `<API>/auth/callback**` a las Redirect URLs de Supabase.
 - **Límite de peticiones:** 120 por usuario y minuto (`RATE_LIMIT_PER_MINUTE`), en memoria por instancia.
 - **RLS:** todas las tablas tienen Row Level Security activado sin políticas, para que la Data API de

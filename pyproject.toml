@@ -1,7 +1,7 @@
 [project]
 name = "gym-server"
 version = "0.1.0"
-description = "Social backend for the gym app: profiles, follows, cloud copy and feed"
+description = "Social backend for Giimme: profiles, follows, cloud copy and feed"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.20.1",
